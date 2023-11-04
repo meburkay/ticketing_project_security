@@ -61,4 +61,8 @@ public class UserPrincipal implements UserDetails {
     public boolean isEnabled() {
         return this.user.isEnabled();
     }
+//we add this for mapping the id of the user.
+    public Long getId(){
+        return this.user.getId();
+    }
 }
