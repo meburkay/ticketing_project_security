@@ -11,9 +11,11 @@ import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 public class SecurityConfig {
 
     private final SecurityService securityService;
+    private final AuthSuccessHandler authSuccessHandler;
 
-    public SecurityConfig(SecurityService securityService) {
+    public SecurityConfig(SecurityService securityService, AuthSuccessHandler authSuccessHandler) {
         this.securityService = securityService;
+        this.authSuccessHandler = authSuccessHandler;
     }
 
     //We are creating bean for Spring user part here. Normally it give a username and password but by creating this bean we are overriding it and create our own user and passwords.
@@ -63,7 +65,9 @@ public class SecurityConfig {
                 //Instead of httpBasic we arrange our login page here.
                 .formLogin()
                     .loginPage("/login")//We define here which page will we use to login.
-                    .defaultSuccessUrl("/welcome")//Here we define where to go after login successfully.
+//                    .defaultSuccessUrl("/welcome")//Here we define where to go after login successfully.
+                    //instead of default we use this for guiding to different pages acording to roles.
+                    .successHandler(authSuccessHandler)
                     .failureUrl("/login?error=true")//This is for failure.
                     .permitAll()
 
