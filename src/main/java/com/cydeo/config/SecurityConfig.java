@@ -42,12 +42,13 @@ public class SecurityConfig {
 
         return http
                 .authorizeRequests()
-                .antMatchers("/user/**").hasRole("ADMIN")//means user that have the role as ADMIN can do all the operations under user controller. The same logic below.
-                .antMatchers("/project/**").hasRole("MANAGER")
-                .antMatchers("/task/employee/**").hasRole("EMPLOYEE")
-                .antMatchers("/task/**").hasRole("MANAGER")
+//                .antMatchers("/user/**").hasRole("ADMIN")//means user that have the role as ADMIN can do all the operations under user controller. The same logic below.
+                .antMatchers("/user/**").hasAuthority("Admin")
+                .antMatchers("/project/**").hasAuthority("Manager")
+                .antMatchers("/task/employee/**").hasAuthority("Employee")
+                .antMatchers("/task/**").hasAuthority("Manager")
 //                .antMatchers("/task/**").hasAnyRole("EMPLOYEE","ADMIN") //We can give more than one role by this way.
-//                .antMatchers("/task/**").hasAuthority("ROLE_EMPLOYEE") /When we use authority we must use ROLE_ convention. For hasRole it automatically added it so we do not need to use it.
+//                .antMatchers("/task/**").hasAuthority("ROLE_EMPLOYEE") //When we use authority we must use ROLE_ convention. For hasRole it automatically added it so we do not need to use it. The main purpose of them is same.
                 .antMatchers(//this used for excluding the endpoints controller or folders from authentication. It is used with permitAll().
                         "/",
                         "/login",
