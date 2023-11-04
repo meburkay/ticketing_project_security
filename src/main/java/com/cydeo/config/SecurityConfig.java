@@ -10,6 +10,7 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -64,10 +65,15 @@ public class SecurityConfig {
                 //.httpBasic()//this defines the default html file that we see to authenticate. In the future we use our login page instead of this.
                 //Instead of httpBasic we arrange our login page here.
                 .formLogin()
-                .loginPage("/login")//We define here which page will we use to login.
-                .defaultSuccessUrl("/welcome")//Here we define where to go after login successfully.
-                .failureUrl("/login?error=true")//This is for failure.
-                .permitAll()
+                    .loginPage("/login")//We define here which page will we use to login.
+                    .defaultSuccessUrl("/welcome")//Here we define where to go after login successfully.
+                    .failureUrl("/login?error=true")//This is for failure.
+                    .permitAll()
+
+                .and()
+                .logout()
+                .logoutRequestMatcher(new AntPathRequestMatcher("/logout"))
+                .logoutSuccessUrl("/login")//After logout what page will open
 
                 .and().build();
     }
