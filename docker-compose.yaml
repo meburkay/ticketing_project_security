@@ -1,4 +1,45 @@
-version: 3.7
+#This is the compose file version. We can see the updates at the docker documentation site.
+version: "3.7"
+#  Under services we put our apps that will talk to each other. We use this structure at microservice more. Here we use ticketing-app and postgres but this is for example. Normally postgres won't use like this.
 services:
+#  The names mypostgres and ticketing-app are random names. We can give any name.
+  mypostgres:
+#    We go to docker hub and search for postgres and take from there the ready image name and write it here. When we write here it automatically downloaded we do not need to give any other command.
+    image: postgres
+#    We define the container name. It is up to us.
+    container_name: mypostgres
+#    Here we define our sign in properties. Think like we use postgresql at a cloud and we login to it with these credentials like we connect to ours.
+    environment:
+      POSTGRES_USER: "postgres"
+      POSTGRES_PASSWORD: "4432"
+      POSTGRES_DB: "ticketing-app"
+#      We define our container's port for opening it to the outside world. We use dash here because we can define more than one parts. It means a list.
+    ports:
+      - "5432:5432"
+#      We define the restart setting here. We can give different options here. We use always means when it stops for any reason restart it always.
+    restart: always
+#    Here we define the postgres persistent data save place by using volumes. We define initdb at below under the main volumes section. Then we use it here. As the address. We find it from the docker postgresql documentation. This means inside of this image we have this address folder and whatever we have under this folder copy and paste them to my volume.
+    volumes:
+      - initdb:/var/lib/postgresql/data
+#      We will communicate by webnet network.
+    networks:
+      - webnet
+  ticketing-app:
+#    Here we start to define the ticketing-app. We will use our own docker image not ready one. Because of that we must build it. Here our dockerfile is at the root file. Because of that we use this. it looks to root file and try to find the dockerfile and if it finds build it.
+    build: .
+    container_name: ticketingapp
+    ports:
+      - "8080:8080"
+    networks:
+      - webnet
+#      My ticketingapp depends on mypostgres. It can not run without it. So first run that and then run me.
+    depends_on:
+      - mypostgres
+#    Networks are the provider of the communication between the services. Here webnet is a random choice. We can give any name to our networks.
 networks:
+#  Here webnet is random but driver and bridge are specific information. We use bridge as driver for our networks.
+  webnet:
+    driver: bridge
+#    Here we define the volumes for my persistent data. Then we use it in the configuration of the services. Here initdb is random/up to us.
 volumes:
+  initdb:
