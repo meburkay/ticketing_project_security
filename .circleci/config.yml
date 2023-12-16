@@ -1,26 +1,69 @@
-# Use the latest 2.1 version of CircleCI pipeline process engine.
-# See: https://circleci.com/docs/configuration-reference
-version: 2.1
-
-# Define a job to be invoked later in a workflow.
-# See: https://circleci.com/docs/configuration-reference/#jobs
+version: 2
+#This is the first main title of two in this file. We define the jobs here. And we will define the squence of them under the workflows title.
 jobs:
-  say-hello:
-    # Specify the execution environment. You can specify an image from Docker Hub or use one of our convenience images from CircleCI's Developer Hub.
-    # See: https://circleci.com/docs/configuration-reference/#executor-job
+#  We can give any name to the jobs but they must be understandable. Because of that we use build here. We build our code with this job.
+  build:
     docker:
-      - image: cimg/base:stable
-    # Add steps to the job
-    # See: https://circleci.com/docs/configuration-reference/#steps
+      # specify the version you desire here. And we put the jdk:11 which is created by circleci. circleci make some modifications at the files for the purpose of working faster at the circleci pipeline. Because of that When we define images if we can find circleci created ones, we must use them like here.
+      - image: circleci/openjdk:11-jdk
+    working_directory: /tmp/workspace
+#    We define the job here step by step.
     steps:
+#      Means find my code
       - checkout
-      - run:
-          name: "Say hello"
-          command: "echo Hello, World!"
+#      Here we say that create this folder. And by putting -p we said that this folder will be my parent/root folder. Everything will be under this folder.
+      - run: mkdir -p /tmp/workspace
+      # Download and cache dependencies. This will work after the first execution (At first execution save_cache will execute and save cache) and restore the cache data if any difference exists it will use the first line of the keys section if there is not it will use the second line for the restoring operation.
+      - restore_cache:
+          keys:
+            - v1-dependencies-{{ checksum "pom.xml" }}
+            # fallback to using the latest cache if no exact match is found
+            - v1-dependencies-
 
-# Orchestrate jobs using workflows
-# See: https://circleci.com/docs/configuration-reference/#workflows
+      - run: mvn clean install -DskipTests
+      - save_cache:
+          paths:
+            - ~/.m2
+          key: v1-dependencies-{{ checksum "pom.xml" }}
+#          Here we define root folder and root folder path.
+      - persist_to_workspace:
+          root: /tmp/workspace
+          paths: .
+  docker-image-and-publish:
+#    We are gonno push our image to a cloud computer. Because of that we define machine as true. We said that I am gonno publish image to another computer.
+    machine: true
+    steps:
+#      All the jobs are seperate. Because of that we attach workspace like this.
+      - attach_workspace:
+          at: /tmp/workspace
+#          This is for debug purposes to see what is under the workspace.
+      - run: ls -a /tmp/workspace
+#     Here under the command section we give the 4 ecr push commands between the and signs. At the second command we change the . to our root /tmp/workspace.
+      - run:
+          name: Create Docker image and push to ECR
+          command: aws ecr get-login-password --region eu-west-2 | docker login --username AWS --password-stdin 717937864787.dkr.ecr.eu-west-2.amazonaws.com && docker build -t ticketingapp /tmp/workspace && docker tag ticketingapp:latest 717937864787.dkr.ecr.eu-west-2.amazonaws.com/ticketingapp:latest && docker push 717937864787.dkr.ecr.eu-west-2.amazonaws.com/ticketingapp:latest
+  deploy-job:
+    docker:
+      #specify the version you desire here
+      - image: circleci/node:10.0.0
+    steps:
+      - run:
+          name: Execute Deployment Script
+          command: |
+            ssh -o "StrictHostKeyChecking=no" ec2-user@ec2-3-89-190-183.compute-1.amazonaws.com <<'ENDSSH'
+#            At the below line we have a deploy_image.sh file. We connect to our remote computer and in it we create a bin folder then create this file and configure it.
+            /bin/bash bin/deploy_image.sh
+            docker ps
+#We define here the flow of the jobs that will be executed.
 workflows:
-  say-hello-workflow:
+  version: 2
+  build_and_test:
     jobs:
-      - say-hello
+      - build
+      - docker-image-and-publish:
+#          requires means that do not start this job until the build is completed. If we do not define any requires build and docke-image-and-publis job will be started at the same time.
+          requires:
+            - build
+      - deploy-job:
+          requires:
+            - docker-image-and-publish
